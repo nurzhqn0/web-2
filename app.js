@@ -45,37 +45,70 @@ app.get(`/${basePoint}/random-user`, async (req, res) => {
   }
 });
 
-// 2. Integrate Countrylayer API based on user's country
+// 2. REST Countries API - Extract currency code
 app.get(`/${basePoint}/country-info/:countryName`, async (req, res) => {
   try {
-    const countryName = req.params.countryName;
+    const countryName = req.params.countryName.trim();
+
     const response = await fetch(
-      `https://api.countrylayer.com/v2/name/${countryName}?access_key=${COUNTRY_LAYER_API}`
+      `https://restcountries.com/v3.1/name/${countryName}`
     );
+
+    if (!response.ok) {
+      return res.status(404).json({
+        error: "Country not found",
+        message: `Could not find information for: ${countryName}`,
+      });
+    }
+
     const data = await response.json();
 
-    if (!data || data.length === 0 || data.error) {
+    if (!data || data.length === 0) {
       return res.status(404).json({ error: "Country not found" });
     }
 
-    const country = Array.isArray(data) ? data[0] : data;
+    const country = data[0];
+
+    // Extract languages
+    const languages = country.languages
+      ? Object.values(country.languages).join(", ")
+      : "N/A";
+
+    // Extract currencies and currency codes
+    let currencyCode = null;
+    let currencyDisplay = "N/A";
+
+    if (country.currencies) {
+      const currenciesArray = Object.entries(country.currencies).map(
+        ([code, curr]) => {
+          // Store the first currency code for exchange rate
+          if (!currencyCode) {
+            currencyCode = code;
+          }
+          return `${curr.name} (${code})`;
+        }
+      );
+      currencyDisplay = currenciesArray.join(", ");
+    }
 
     const countryInfo = {
-      name: country.name || "N/A",
-      capital: country.capital || "N/A",
-      languages:
-        country.languages?.map((lang) => lang.name).join(", ") || "N/A",
-      currency:
-        country.currencies
-          ?.map((curr) => `${curr.name} (${curr.code})`)
-          .join(", ") || "N/A",
-      flag: country.flag || country.flags?.svg || country.flags?.png || null,
+      name: country.name.common || "N/A",
+      capital: country.capital ? country.capital[0] : "N/A",
+      languages: languages,
+      currency: currencyDisplay,
+      currencyCode: currencyCode, // ADD THIS - for exchange rate
+      flag: country.flags?.svg || country.flags?.png || null,
+      region: country.region || "N/A",
+      population: country.population || 0,
     };
 
     res.json(countryInfo);
   } catch (error) {
     console.error("Error fetching country data:", error);
-    res.status(500).json({ error: "Failed to fetch country data" });
+    res.status(500).json({
+      error: "Failed to fetch country data",
+      details: error.message,
+    });
   }
 });
 

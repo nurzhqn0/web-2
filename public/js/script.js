@@ -108,21 +108,17 @@ async function fetchCountryInfo(country) {
     countryLanguages.textContent = countryData.languages;
     countryCurrency.textContent = countryData.currency;
 
-    if (countryData.flag) {
+    if (countryData.flag && countryFlag) {
       countryFlag.src = countryData.flag;
       countryFlag.alt = `${countryData.name} flag`;
     }
 
-    // Extract currency code for exchange rate
-    const currencyMatch = countryData.currency.match(/\(([A-Z]{3})\)/);
-    if (currencyMatch) {
-      const currencyCode = currencyMatch[1];
-      fetchExchangeRate(currencyCode);
+    if (countryData.currencyCode) {
+      fetchExchangeRate(countryData.currencyCode);
     } else {
       showExchangeError();
     }
 
-    // Hide loading, show info
     countryLoading.classList.add("d-none");
     countryInfo.classList.remove("d-none");
   } catch (error) {
