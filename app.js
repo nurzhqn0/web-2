@@ -69,19 +69,16 @@ app.get(`/${basePoint}/country-info/:countryName`, async (req, res) => {
 
     const country = data[0];
 
-    // Extract languages
     const languages = country.languages
       ? Object.values(country.languages).join(", ")
       : "N/A";
 
-    // Extract currencies and currency codes
     let currencyCode = null;
     let currencyDisplay = "N/A";
 
     if (country.currencies) {
       const currenciesArray = Object.entries(country.currencies).map(
         ([code, curr]) => {
-          // Store the first currency code for exchange rate
           if (!currencyCode) {
             currencyCode = code;
           }
